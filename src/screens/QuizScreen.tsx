@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { enqueueAnswer, logSkipped, setGraceUntil } from '../lib/storage';
+import { enqueueAnswer, logSkipped, recordSnapshotResult, setGraceUntil } from '../lib/storage';
 import { postAnswer } from '../lib/api';
 import type { AnswerPayload, BlockMode, QuizQuestion } from '../types';
 
@@ -38,13 +38,16 @@ export default function QuizScreen({
     // Log the FIRST attempt only — that's the honest signal for spaced repetition.
     if (!postedRef.current) {
       postedRef.current = true;
+      const isCorrect = letter === question.answer_key;
       const payload: AnswerPayload = {
         bank_id: question.bank_id,
         chosen_letter: letter,
-        correct: letter === question.answer_key,
+        correct: isCorrect,
         at: new Date().toISOString(),
       };
       postAnswer(serverUrl, payload).catch(() => enqueueAnswer(payload));
+      // Feeds the offline snapshot's wrong-first re-quiz ordering.
+      recordSnapshotResult(question.bank_id, isCorrect).catch(() => {});
     }
     if (letter === question.answer_key) {
       setGraceUntil(packageName, Date.now() + graceMinutes * 60_000).catch(() => {});

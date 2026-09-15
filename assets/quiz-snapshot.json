@@ -1,0 +1,180 @@
+[
+  {
+    "bank_id": "BANK-021",
+    "status": "unused",
+    "phase": "AJO",
+    "subtopic": "Journey versioning \u2014 structural edits require a new version; in-flight profiles stay on the old version",
+    "question": "A welcome journey is live with 5,000 profiles in flight. The team needs to change a condition's logic and lengthen a wait activity \u2014 both structural changes. What must they do, and what happens to the in-flight profiles?",
+    "options": [
+      {
+        "letter": "A",
+        "text": "Edit the journey in place \u2014 live journeys accept structural edits, and in-flight profiles pick up the new logic at their next activity"
+      },
+      {
+        "letter": "B",
+        "text": "Stop the live journey, edit the canvas, and republish \u2014 all 5,000 in-flight profiles are migrated onto the new canvas design"
+      },
+      {
+        "letter": "C",
+        "text": "Create a new version; in-flight profiles finish on the old version and new entrants flow to the new version \u2014 but only when re-entrance is disabled"
+      },
+      {
+        "letter": "D",
+        "text": "Create a new version from the latest version; in-flight profiles stay on the previous version until they exit, and new entries flow into the latest published version"
+      }
+    ],
+    "answer_key": "D",
+    "why_correct": "Structural changes to a live journey require creating a new version \u2014 only limited elements like name and message content can be edited while live. Publishing a new version does not move in-flight profiles: profiles that already entered a previous version stay in it until they exit the journey, while new entries flow into the latest published version. New versions can only be created from the latest version.",
+    "why_wrong": {
+      "A": "live journeys cannot be structurally edited in place; only name and message content are editable without a new version.",
+      "B": "the documented path is a new version, not stop-and-edit, and publishing a new version never migrates in-flight profiles mid-flow.",
+      "C": "version behavior has nothing to do with the re-entrance toggle; the cross-version rule is that a profile cannot be active in two versions at once \u2014 if still active in the old version, a new entry into the new version is blocked until the old instance ends."
+    },
+    "sources": [
+      "https://experienceleague.adobe.com/en/docs/journey-optimizer/using/orchestrate-journeys/manage-journey/entry-management",
+      "https://experienceleague.adobe.com/en/docs/journey-optimizer/using/orchestrate-journeys/journey"
+    ]
+  },
+  {
+    "bank_id": "BANK-022",
+    "status": "unused",
+    "phase": "AJO",
+    "subtopic": "Channel capping rule sets \u2014 cross-channel counts and UTC-based resets",
+    "question": "A marketer activates a channel rule set with one rule: at most 5 marketing messages per day, applied to the Email and SMS channels together. On Tuesday at 10:00 AM UTC, a profile has received 3 marketing emails and 2 marketing SMS. At 11:00 AM UTC a journey reaches an email send for that profile. What happens?",
+    "options": [
+      {
+        "letter": "A",
+        "text": "The email is sent \u2014 the rule counts 5 per channel, and the profile has only received 3 emails"
+      },
+      {
+        "letter": "B",
+        "text": "The email is sent, and only then is the profile excluded from the rest of the day's sends"
+      },
+      {
+        "letter": "C",
+        "text": "The profile is excluded from this delivery \u2014 the 5-message cap counts email and SMS together as a total, the profile already hit 5, and the daily counter resets at midnight UTC"
+      },
+      {
+        "letter": "D",
+        "text": "The profile is excluded from all marketing sends for the rest of the week \u2014 daily caps roll up into a weekly lockout"
+      }
+    ],
+    "answer_key": "C",
+    "why_correct": "When several channels are selected in a capping rule, the capping count applies across all selected channels as a total \u2014 3 emails + 2 SMS = 5, so the cap is hit and the profile is excluded from the very next delivery of any marketing email or SMS. Daily frequency caps are calendar-day based and reset to 0 at the start of the next day (midnight UTC).",
+    "why_wrong": {
+      "A": "treats the cap as per-channel; the documentation's example is explicit that multi-channel selection counts the total across channels.",
+      "B": "the exclusion applies to the delivery that would exceed the cap, not the one after; the cap is already hit at 10:00 AM.",
+      "D": "invents a weekly lockout; a daily rule resets daily with no roll-up."
+    },
+    "sources": [
+      "https://experienceleague.adobe.com/en/docs/journey-optimizer/using/conflict-prioritization/capping-rules/channel-capping"
+    ]
+  },
+  {
+    "bank_id": "BANK-023",
+    "status": "unused",
+    "phase": "AJO",
+    "subtopic": "Custom action response handling \u2014 jo_status_code, timeout/error branch, errorResponse node",
+    "question": "A journey calls a loyalty API through a newly created custom action. The endpoint returns HTTP 400, and the custom action has an error response payload defined. The marketer wants the journey to take a fallback path and branch on the specific error. How should they build this?",
+    "options": [
+      {
+        "letter": "A",
+        "text": "Put a condition in the success branch checking the response body \u2014 HTTP 400 responses still flow through the success path with an error flag"
+      },
+      {
+        "letter": "B",
+        "text": "Enable the alternative timeout/error path and branch with @action{ActionLoyalty.jo_status_code} == \"http_400\" \u2014 a call is in error when the HTTP code is greater than 2xx, and the configured error response fields are exposed under the errorResponse node"
+      },
+      {
+        "letter": "C",
+        "text": "Check jo_status_code in the success branch \u2014 jo_status_code only reports \"timedout\", and HTTP errors are invisible to the journey"
+      },
+      {
+        "letter": "D",
+        "text": "Cache the response per journey run \u2014 Journey Optimizer calls the endpoint once per journey execution and reuses the payload for every profile"
+      }
+    ],
+    "answer_key": "B",
+    "why_correct": "An action call is considered in error when the returned HTTP code is greater than 2xx (or if an error occurs), and the journey flows to the dedicated timeout/error branch. The built-in jo_status_code field carries http_`<code>`/timedout/capped/internalError and can be used in a condition on that branch; when an error response payload is configured, its fields are exposed under the errorResponse node for failed calls.",
+    "why_wrong": {
+      "A": "HTTP codes above 2xx do not take the success path; they route to the timeout/error branch.",
+      "C": "jo_status_code is not timeout-only; its values are http codes, timedout, capped, and internalError.",
+      "D": "backwards: each profile entering the custom action triggers its own call \u2014 \"even if the response is always the same, Journey will still perform one call per profile.\""
+    },
+    "sources": [
+      "https://experienceleague.adobe.com/en/docs/journey-optimizer/using/configure-journeys/action-journeys/action-response"
+    ]
+  },
+  {
+    "bank_id": "BANK-024",
+    "status": "unused",
+    "phase": "CJA",
+    "subtopic": "Data view session settings \u2014 idle timeout and metric-based session start, applied at report time",
+    "question": "An analyst wants every mobile app launch to start a new session AND wants sessions to expire after 30 minutes of inactivity. They make these changes in the data view today, then re-run a report covering last month. What happens?",
+    "options": [
+      {
+        "letter": "A",
+        "text": "Both changes apply immediately to the historical report \u2014 session timeout and the session-start metric are defined per data view, are non-destructive, and are applied at report time; other data views on the same connection are unaffected"
+      },
+      {
+        "letter": "B",
+        "text": "The 30-minute timeout applies to the historical report, but the app-launch session start only applies to data collected after the change"
+      },
+      {
+        "letter": "C",
+        "text": "The changes require a new connection \u2014 session settings are connection-level, not data-view-level"
+      },
+      {
+        "letter": "D",
+        "text": "Sessions can only be defined by timeout, not by a metric \u2014 there is no way to start a new session on app launch in Customer Journey Analytics"
+      }
+    ],
+    "answer_key": "A",
+    "why_correct": "Session settings live in the data view (Settings tab): the session timeout (idle minutes/hours/days/weeks before a new session starts) and \"Start new session with a metric\" (e.g. a Launch metric built from an appInteraction schema field \u2014 the documentation's own example). Settings are non-destructive \u2014 multiple data views on one connection can each carry their own session definition \u2014 and, consistent with CJA's report-time processing, changes apply at report time to historical and future data alike without reprocessing.",
+    "why_wrong": {
+      "B": "describes Adobe Analytics behavior, where collection-time settings apply forward only; CJA inverts this.",
+      "C": "session settings are data-view-level; the connection defines datasets, Person ID, retention, and backfill.",
+      "D": "\"Start new session with a metric\" is an explicitly documented setting; the doc's example is literally the app-launch metric."
+    },
+    "sources": [
+      "https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/session-settings",
+      "https://experienceleague.adobe.com/en/docs/analytics-platform/using/compare-aa-cja/cja-aa-comparison/data-processing-comparisons"
+    ]
+  },
+  {
+    "bank_id": "BANK-025",
+    "status": "unused",
+    "phase": "CJA",
+    "subtopic": "Person ID and identity stitching in the connection \u2014 skipped rows, one-dataset stitching, case sensitivity",
+    "question": "A connection joins a web event dataset (CRMid present on only 40% of rows, stitching not enabled) with a call-center dataset using CRMid as the Person ID. Which statement is correct?",
+    "options": [
+      {
+        "letter": "A",
+        "text": "The missing 60% are backfilled automatically \u2014 Customer Journey Analytics resolves missing Person IDs through the Device Co-op"
+      },
+      {
+        "letter": "B",
+        "text": "Identity stitching merges the two datasets into a single stitched dataset before reporting"
+      },
+      {
+        "letter": "C",
+        "text": "Person ID matching is case-insensitive, so \"abc123\" and \"ABC123\" join to the same person"
+      },
+      {
+        "letter": "D",
+        "text": "Rows without a CRMid value are skipped from the connection's stitched data; enabling identity stitching (Select package or higher for field-based) rekeys rows within the web event dataset using authenticated and unauthenticated sessions to recover a common Person ID \u2014 stitching applies to that one dataset, not as a merge of the two"
+      }
+    ],
+    "answer_key": "D",
+    "why_correct": "\"If a record doesn't contain a value for the identity you have selected as the Person ID for the event dataset, the record is skipped.\" Identity stitching rekeys identities within one dataset's rows \u2014 looking at both authenticated and unauthenticated sessions \u2014 to get the desired Person ID onto as many events as possible (where no common Person ID can be determined, the persistent ID value is used). Stitching is not a dataset merge: the datasets are combined by selecting the same person ID across them in the connection. Field-based stitching requires the Select package or higher; graph-based requires Prime or higher.",
+    "why_wrong": {
+      "A": "overclaims: CJA has no Device Co-op backfill for missing Person IDs (and stitching authenticated+unauthenticated data carries explicit consent/compliance prerequisites).",
+      "B": "confuses stitching with merging; the docs state stitching applies to one dataset only.",
+      "C": "Person ID values are case-sensitive: `abc123` and `ABC123` are treated as two different people."
+    },
+    "sources": [
+      "https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-connections/create-connection",
+      "https://experienceleague.adobe.com/en/docs/analytics-platform/using/stitching/overview"
+    ]
+  }
+]

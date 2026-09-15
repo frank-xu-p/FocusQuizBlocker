@@ -1,4 +1,5 @@
 import type { AnswerPayload, QuizQuestion } from '../types';
+import { getSnapshotQuestion } from './snapshot';
 
 function base(serverUrl: string): string {
   return serverUrl.replace(/\/$/, '');
@@ -39,33 +40,44 @@ export interface SpareStore {
 }
 
 /**
- * Question to show when a blocked app opens. Prefers a live fetch (which also
- * tops up the cached spare while online — each fetch marks a bank set used
- * server-side). Falls back to the one-time cached spare when offline.
+ * Question to show when a blocked app opens.
+ *
+ * Primary: live fetch from the quiz server (each fetch marks a bank set used
+ * server-side, so scheduled chat quizzes never repeat it; a spare is cached
+ * while online for the next offline moment).
+ * Fallback: the bundled offline snapshot (pre-claimed bank sets).
+ * When no server URL is configured, the spare/snapshot path is used directly.
  */
 export async function getQuestionForBlock(
   serverUrl: string,
   spare: SpareStore,
 ): Promise<QuizQuestion | null> {
-  try {
-    const q = await fetchNextQuestion(serverUrl);
+  if (serverUrl) {
     try {
-      if (!(await spare.getSpare())) {
-        const s = await fetchNextQuestion(serverUrl);
-        await spare.setSpare(s);
+      const q = await fetchNextQuestion(serverUrl);
+      try {
+        if (!(await spare.getSpare())) {
+          const s = await fetchNextQuestion(serverUrl);
+          await spare.setSpare(s);
+        }
+      } catch {
+        /* spare top-up is best-effort */
+      }
+      return q;
+    } catch {
+      /* server unreachable -> fall through to offline sources */
+    }
+    try {
+      const s = await spare.getSpare();
+      if (s) {
+        await spare.clearSpare(); // one-time use; replenished on next online fetch
+        return s;
       }
     } catch {
-      /* spare top-up is best-effort */
+      /* ignore */
     }
-    return q;
-  } catch {
-    const s = await spare.getSpare();
-    if (s) {
-      await spare.clearSpare(); // one-time use; replenished on next online fetch
-      return s;
-    }
-    return null;
   }
+  return getSnapshotQuestion();
 }
 
 /** POST every queued answer; returns counts and leaves failures queued. */

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { GRACE_PRESETS } from '../constants';
 import { getQueue, setQueue } from '../lib/storage';
 import { flushQueue } from '../lib/api';
-import type { AppSettings, BlockMode } from '../types';
+import type { AnswerPayload, AppSettings, BlockMode } from '../types';
 
 interface Props {
   settings: AppSettings;
@@ -33,6 +34,21 @@ export default function SettingsScreen({ settings, onChange }: Props) {
       setSyncStatus('Sync failed — check the server URL.');
     }
     setSyncing(false);
+  };
+
+  const exportAnswers = async () => {
+    const q: AnswerPayload[] = await getQueue();
+    if (!q.length) {
+      setSyncStatus('No queued answers to export.');
+      return;
+    }
+    const lines = q.map(
+      (a) => `- ${a.bank_id}: chose ${a.chosen_letter} (${a.correct ? 'correct' : 'wrong'}) at ${a.at}`,
+    );
+    await Clipboard.setStringAsync(`FocusQuiz queued answers\n${lines.join('\n')}`);
+    setSyncStatus(
+      `Copied ${q.length} answer${q.length === 1 ? '' : 's'} — paste to Spark in chat to log them.`,
+    );
   };
 
   return (
@@ -92,6 +108,9 @@ export default function SettingsScreen({ settings, onChange }: Props) {
       <TouchableOpacity style={styles.syncBtn} onPress={syncNow} disabled={syncing}>
         <Text style={styles.syncBtnText}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.exportBtn} onPress={exportAnswers}>
+        <Text style={styles.exportBtnText}>Export queued answers</Text>
+      </TouchableOpacity>
       {syncStatus !== '' && <Text style={styles.syncStatus}>{syncStatus}</Text>}
 
       <Text style={styles.version}>FocusQuiz 1.0.0 · answers feed your Adobe cert study tracker</Text>
@@ -134,6 +153,16 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   syncBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  exportBtn: {
+    backgroundColor: '#1b1836',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#2a2650',
+  },
+  exportBtnText: { color: '#c7c5e8', fontSize: 15, fontWeight: '600' },
   syncStatus: { color: '#a5a3c7', fontSize: 13, marginTop: 8, textAlign: 'center' },
   version: { color: '#4a4969', fontSize: 11, textAlign: 'center', marginTop: 28 },
 });

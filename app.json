@@ -9,7 +9,7 @@
       "versionCode": 1
     },
     "extra": {
-      "serverUrl": "TUNNEL_URL_PLACEHOLDER"
+      "serverUrl": ""
     },
     "icon": "./assets/icon.png",
     "name": "FocusQuiz",

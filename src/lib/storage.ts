@@ -9,6 +9,8 @@ const K = {
   queue: '@fq:answerQueue',
   spare: '@fq:spareQuestion',
   skipped: '@fq:skippedLog',
+  snapshotUsed: '@fq:snapshotUsed',
+  snapshotResults: '@fq:snapshotResults',
 };
 
 function defaultSettings(): AppSettings {
@@ -110,6 +112,47 @@ export async function setSpareQuestion(q: QuizQuestion): Promise<void> {
 
 export async function clearSpareQuestion(): Promise<void> {
   await AsyncStorage.removeItem(K.spare);
+}
+
+// --- Offline snapshot bookkeeping --------------------------------------------
+// The bundled assets/quiz-snapshot.json holds pre-claimed bank sets (already
+// marked `used` server-side). Served ids are tracked so nothing repeats until
+// the snapshot is exhausted; per-question results drive wrong-first re-quiz.
+
+export async function getSnapshotUsed(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(K.snapshotUsed);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addSnapshotUsed(bankId: string): Promise<void> {
+  const used = await getSnapshotUsed();
+  if (!used.includes(bankId)) {
+    used.push(bankId);
+    await AsyncStorage.setItem(K.snapshotUsed, JSON.stringify(used));
+  }
+}
+
+export async function getSnapshotResults(): Promise<Record<string, boolean>> {
+  try {
+    const raw = await AsyncStorage.getItem(K.snapshotResults);
+    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function recordSnapshotResult(bankId: string, correct: boolean): Promise<void> {
+  try {
+    const results = await getSnapshotResults();
+    results[bankId] = correct;
+    await AsyncStorage.setItem(K.snapshotResults, JSON.stringify(results));
+  } catch {
+    /* ignore */
+  }
 }
 
 // --- Skipped log (gentle mode; local only, never sent to the tracker) --------

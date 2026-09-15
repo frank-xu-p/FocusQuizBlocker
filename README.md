@@ -16,6 +16,28 @@ Expo Go can't do usage-access or screen overlays).
   manual sync), and the quiz flow.
 - `server/` — Python-stdlib quiz server (see `server/README.md`).
 
+## Quiz questions: live server vs offline snapshot
+
+The app tries, in order:
+
+1. **Live server** — if a server URL is set in Settings, it fetches the oldest
+   unused bank set from `server/server.py`, which marks it used so the
+   twice-daily chat quizzes never repeat it.
+2. **Offline snapshot** — `assets/quiz-snapshot.json` holds bank sets
+   pre-claimed for this app (already marked `used` in the bank). Each is served
+   once, then wrong answers are re-quizzed first (spaced repetition), then the
+   snapshot cycles. The quiz loop never dead-ends offline.
+
+Answers POST to the server when reachable, otherwise queue on-device; **Sync
+now** flushes the queue, and **Export queued answers** copies them as text to
+paste to Spark in chat for manual logging.
+
+> Sandbox note (2026-09-15): tunnel services (cloudflared quick tunnels, SSH
+> forwards) are blocked from the build VM, so the VM-hosted server isn't
+> reachable from the phone right now. The app therefore ships in snapshot mode
+> (server URL empty). To go live later: run `server/server.py` on a machine
+> the phone can reach and paste its URL into Settings → Quiz server URL.
+
 ## Build the APK (on a machine with the Android SDK)
 
 This repo was scaffolded and validated on a VM without the Android SDK, so the

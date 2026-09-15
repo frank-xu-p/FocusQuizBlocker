@@ -24,7 +24,8 @@ Env overrides: `PORT`, `BANK_PATH`, `GOAL_PATH`, `TZ` (default America/New_York)
 
 ## Public access (for the phone)
 
-The server only listens on 127.0.0.1. Expose it with a Cloudflare quick tunnel:
+The server only listens on 127.0.0.1. To expose it, run a tunnel on the same
+machine as the server, e.g.:
 
 ```sh
 /usr/local/bin/cloudflared tunnel --url http://localhost:8077
@@ -34,6 +35,12 @@ Copy the `https://…trycloudflare.com` URL it prints into the app's
 **Settings → Quiz server URL** (or bake it into `app.json` → `extra.serverUrl`
 before building). Quick-tunnel URLs change on every restart — if the app can't
 reach the server, grab a fresh URL and update the setting.
+
+> 2026-09-15: tunnel services are blocked from the build VM's sandbox, so the
+> VM-hosted server can't be exposed right now — the app ships using its bundled
+> offline snapshot instead. Running `server.py` on the phone owner's laptop
+> (with the question bank available there) plus a tunnel from the laptop is the
+> path to live mode.
 
 ## Notes
 
