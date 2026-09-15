@@ -1,0 +1,1 @@
+{"description":"Expo module: watches the foreground app via UsageStatsManager and emits events to JS.","license":"UNRECOGNIZED","main":"index.js","name":"foreground-watcher","version":"1.0.0"}

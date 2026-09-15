@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "react-native",
+    "lib": [
+      "ES2020"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2020",
+    "paths": {
+      "foreground-watcher": [
+        "./src/types/shims/foreground-watcher.d.ts"
+      ],
+      "quiz-overlay": [
+        "./src/types/shims/quiz-overlay.d.ts"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "android"
+  ],
+  "include": [
+    "src",
+    "index.js"
+  ]
+}
